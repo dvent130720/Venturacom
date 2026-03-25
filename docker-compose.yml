@@ -19,21 +19,29 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: venturacom_redis
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: venturacom_api
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_pass}
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${DB_NAME:-venturacom_sri};Username=${DB_USER:-venturacom};Password=${DB_PASSWORD:-venturacom_pass}
+      - Api__Key=${API_KEY}
+      - Encryption__Key=${ENCRYPTION_KEY}
+      - Sri__Environment=1
+      - Issuer__Ruc=${ISSUER_RUC}
+      - Issuer__BusinessName=${ISSUER_BUSINESS_NAME}
+      - Issuer__TradeName=${ISSUER_TRADE_NAME}
+      - Issuer__Address=${ISSUER_ADDRESS}
+      - Issuer__Establishment=${ISSUER_ESTABLISHMENT:-001}
+      - Issuer__EmissionPoint=${ISSUER_EMISSION_POINT:-001}
 
 volumes:
   postgres_data:
-  redis_data:

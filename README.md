@@ -1,16 +1,18 @@
 # Venturacom — Worker de Facturación Electrónica SRI Ecuador
 
-Sistema de facturación electrónica para el **SRI Ecuador** con API REST y worker asíncrono.
+Sistema de facturación electrónica para el **SRI Ecuador** construido con **.NET 8** y **ASP.NET Core**.
 
-## Características
+## Stack tecnológico
 
-- Generación de XML de facturas según esquema SRI v2.1.0
-- **Firma obligatoria XAdES-BES** antes de enviar al SRI
-- Almacenamiento seguro de certificados P12 (cifrado AES-256-GCM)
-- Worker asíncrono con BullMQ + Redis (sign → send → authorize)
-- Base de datos PostgreSQL con Prisma ORM
-- Ambiente de **pruebas** configurado por defecto
-- API REST con autenticación por API Key
+| Componente | Tecnología |
+|---|---|
+| API REST | ASP.NET Core 8 Web API |
+| Worker / Jobs | Hangfire + PostgreSQL |
+| Base de datos | PostgreSQL + EF Core 8 (Npgsql) |
+| Firma digital | XAdES-BES (`System.Security.Cryptography.Xml`) |
+| Comunicación SRI | SOAP via `HttpClient` |
+| Cifrado certificados | AES-256-GCM (`System.Security.Cryptography.AesGcm`) |
+| Logging | Serilog |
 
 ## Arquitectura
 
@@ -20,28 +22,32 @@ POST /api/v1/invoices
         ▼
    [DRAFT en DB]
         │
-        ▼ (worker)
-   sign-invoice  ←── XAdES-BES con certificado P12
+        ▼ Hangfire Job: SignInvoiceJob
+   Firma XAdES-BES (certificado P12) → SIGNED
         │
-        ▼ (worker)
-   send-invoice  ←── SOAP → SRI celcer.sri.gob.ec
+        ▼ Hangfire Job: SendInvoiceJob
+   SOAP → celcer.sri.gob.ec/RecepcionComprobantesOffline → SENT
         │
-        ▼ (worker, con delay)
-check-authorization  ←── SOAP → SRI
+        ▼ Hangfire Job: CheckAuthorizationJob (con delay + reintentos)
+   SOAP → celcer.sri.gob.ec/AutorizacionComprobantesOffline
         │
-    AUTORIZADO / RECHAZADO
+   AUTHORIZED / REJECTED
 ```
+
+> **Regla de negocio:** Es imposible enviar una factura al SRI sin que el XML
+> esté firmado con un certificado P12 válido y vigente.
+> El servicio lanza error `422` si se intenta enviar una factura no firmada.
 
 ## Inicio rápido
 
-### 1. Configuración
+### 1. Configurar variables de entorno
 
 ```bash
 cp .env.example .env
-# Editar .env con sus valores
 ```
 
-Generar claves:
+Generar claves seguras:
+
 ```bash
 # API Key
 openssl rand -hex 32
@@ -50,48 +56,62 @@ openssl rand -hex 32
 openssl rand -hex 32
 ```
 
-### 2. Levantar servicios (Docker)
+Editar `src/VenturacomSri.Api/appsettings.Development.json` con los valores locales.
+
+### 2. Levantar PostgreSQL (Docker)
 
 ```bash
-docker-compose up -d
+docker-compose up -d postgres
 ```
 
-### 3. Instalar dependencias y migrar DB
+### 3. Aplicar migraciones EF Core
 
 ```bash
-npm install
-npx prisma migrate dev --name init
-npx prisma generate
+cd src/VenturacomSri.Api
+dotnet ef database update
 ```
 
-### 4. Iniciar API y Worker
+O dejar que la app las aplique automáticamente al iniciar.
+
+### 4. Ejecutar la API (incluye el worker Hangfire)
 
 ```bash
-# Terminal 1 — API
-npm run dev:api
+dotnet run --project src/VenturacomSri.Api
+```
 
-# Terminal 2 — Worker
-npm run dev:worker
+La API estará en `http://localhost:5000`.
+El dashboard de Hangfire (solo Development) en `http://localhost:5000/hangfire`.
+
+### 5. Docker Compose completo
+
+```bash
+docker-compose up --build
 ```
 
 ## API Endpoints
 
-### Certificados
+### Health
+
+```
+GET /health
+```
+
+### Certificados (autenticación: X-API-Key)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/v1/certificates` | Listar certificados |
 | POST | `/api/v1/certificates` | Subir certificado P12 (multipart/form-data) |
-| PATCH | `/api/v1/certificates/:id/activate` | Activar certificado |
-| PATCH | `/api/v1/certificates/:id/deactivate` | Desactivar certificado |
+| PATCH | `/api/v1/certificates/{id}/activate` | Activar |
+| PATCH | `/api/v1/certificates/{id}/deactivate` | Desactivar |
 
-**Subir certificado:**
 ```bash
-curl -X POST http://localhost:3000/api/v1/certificates \
-  -H "X-API-Key: <tu-api-key>" \
-  -F "certificate=@/ruta/al/certificado.p12" \
+# Subir certificado P12
+curl -X POST http://localhost:5000/api/v1/certificates \
+  -H "X-API-Key: dev-api-key-change-in-production" \
+  -F "certificate=@mi_certificado.p12" \
   -F "password=clave_p12" \
-  -F "name=Certificado Empresa 2024"
+  -F "name=Certificado 2024"
 ```
 
 ### Facturas
@@ -100,20 +120,20 @@ curl -X POST http://localhost:3000/api/v1/certificates \
 |--------|------|-------------|
 | GET | `/api/v1/invoices` | Listar facturas |
 | POST | `/api/v1/invoices` | Crear factura (inicia flujo automático) |
-| GET | `/api/v1/invoices/:id` | Consultar factura |
-| POST | `/api/v1/invoices/:id/sign` | Encolar firma manual |
-| POST | `/api/v1/invoices/:id/send` | Encolar envío manual al SRI |
-| POST | `/api/v1/invoices/:id/check-auth` | Consultar autorización |
-| DELETE | `/api/v1/invoices/:id` | Cancelar factura |
+| GET | `/api/v1/invoices/{id}` | Consultar factura |
+| POST | `/api/v1/invoices/{id}/sign` | Encolar firma manual |
+| POST | `/api/v1/invoices/{id}/send` | Encolar envío manual al SRI |
+| POST | `/api/v1/invoices/{id}/check-auth` | Consultar autorización |
+| DELETE | `/api/v1/invoices/{id}` | Cancelar factura |
 
-**Crear factura:**
 ```bash
-curl -X POST http://localhost:3000/api/v1/invoices \
-  -H "X-API-Key: <tu-api-key>" \
+# Crear factura
+curl -X POST http://localhost:5000/api/v1/invoices \
+  -H "X-API-Key: dev-api-key-change-in-production" \
   -H "Content-Type: application/json" \
   -d '{
     "buyerIdType": "05",
-    "buyerId": "1234567890",
+    "buyerId": "1712345678",
     "buyerName": "Juan Pérez",
     "buyerEmail": "juan@example.com",
     "paymentMethod": "01",
@@ -129,23 +149,29 @@ curl -X POST http://localhost:3000/api/v1/invoices \
   }'
 ```
 
-### Health
-
-```bash
-curl http://localhost:3000/health
-```
-
 ## Flujo de estados
 
 ```
 DRAFT → SIGNED → SENT → AUTHORIZED
                       ↘ REJECTED
+DRAFT → CANCELLED
+SIGNED → CANCELLED
 ```
 
-> **Importante:** No es posible enviar una factura al SRI sin antes firmarla
-> con un certificado P12 válido. El sistema rechaza el envío si el XML no está firmado.
+## Seguridad
 
-## Ambiente de pruebas SRI
+| Punto | Mecanismo |
+|---|---|
+| Certificados P12 en BD | Cifrado **AES-256-GCM** (clave en variables de entorno) |
+| Firma digital | **XAdES-BES** con RSA-SHA1 sobre certificado P12 |
+| Envío al SRI | Bloqueado si el XML no está firmado (`422 Unprocessable Entity`) |
+| API | Header **X-API-Key** en todas las rutas protegidas |
+| P12 en memoria | `EphemeralKeySet` — la clave privada no persiste en disco |
 
-- Recepción: `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline`
-- Autorización: `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline`
+## Ambiente SRI
+
+| Parámetro | Valor Pruebas |
+|---|---|
+| `Sri:Environment` | `1` |
+| Recepción | `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline` |
+| Autorización | `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline` |
