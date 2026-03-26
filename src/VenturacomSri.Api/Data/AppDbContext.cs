@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,13 @@ public class AppDbContext : DbContext
              .WithMany(i => i.AuditLogs)
              .HasForeignKey(a => a.InvoiceId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // User
+        modelBuilder.Entity<User>(e =>
+        {
+            e.HasIndex(u => u.Email).IsUnique();
+            e.HasIndex(u => u.GoogleId);
         });
     }
 }

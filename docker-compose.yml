@@ -1,40 +1,80 @@
 version: "3.9"
 
 services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: venturacom_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-venturacom}
+      POSTGRES_USER:     ${DB_USER:-venturacom}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-venturacom_pass}
-      POSTGRES_DB: ${DB_NAME:-venturacom_sri}
+      POSTGRES_DB:       ${DB_NAME:-venturacom_sri}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-venturacom}"]
+      test:     ["CMD-SHELL", "pg_isready -U ${DB_USER:-venturacom}"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout:  5s
+      retries:  5
 
+  # ── Redis (sesiones y OTP) ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: venturacom_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_pass}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:     ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_pass}", "ping"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  # ── API .NET 8 ─────────────────────────────────────────────────────────────
   api:
     build:
-      context: .
+      context:    .
       dockerfile: Dockerfile
     container_name: venturacom_api
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__Default=Host=postgres;Port=5432;Database=${DB_NAME:-venturacom_sri};Username=${DB_USER:-venturacom};Password=${DB_PASSWORD:-venturacom_pass}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-redis_pass}
       - Api__Key=${API_KEY}
       - Encryption__Key=${ENCRYPTION_KEY}
+      # JWT
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=venturacom-api
+      - Jwt__Audience=venturacom-app
+      - Jwt__AccessTokenMinutes=15
+      - Jwt__RefreshTokenDays=30
+      # Google OAuth
+      - Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+      # SMTP
+      - Smtp__Host=${SMTP_HOST:-smtp.gmail.com}
+      - Smtp__Port=${SMTP_PORT:-587}
+      - Smtp__User=${SMTP_USER}
+      - Smtp__Password=${SMTP_PASSWORD}
+      - Smtp__FromName=Venturacom
+      # CORS
+      - Cors__AllowedOrigins__0=${FRONTEND_URL:-http://localhost:4200}
+      # SRI
       - Sri__Environment=1
       - Issuer__Ruc=${ISSUER_RUC}
       - Issuer__BusinessName=${ISSUER_BUSINESS_NAME}
@@ -45,3 +85,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

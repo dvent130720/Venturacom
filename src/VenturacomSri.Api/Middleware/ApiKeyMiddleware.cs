@@ -14,10 +14,11 @@ public class ApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext ctx)
     {
-        // Eximir el health check y el dashboard de Hangfire
+        // Eximir el health check, dashboard Hangfire y rutas de autenticación
         var path = ctx.Request.Path.Value ?? "";
-        if (path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/hangfire", StringComparison.OrdinalIgnoreCase))
+        if (path.StartsWith("/health",   StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/hangfire", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/auth", StringComparison.OrdinalIgnoreCase))
         {
             await _next(ctx);
             return;

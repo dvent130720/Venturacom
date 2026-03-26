@@ -1,0 +1,112 @@
+<div class="login-wrapper">
+  <div class="login-card">
+
+    <!-- Logo / marca -->
+    <div class="brand">
+      <div class="brand-icon">V</div>
+      <h1>Venturacom</h1>
+      <p class="brand-sub">Facturación electrónica SRI Ecuador</p>
+    </div>
+
+    <!-- ── PASO 1: Correo ───────────────────────────────────────────────── -->
+    @if (step() === 'initial') {
+
+      <div class="section-title">
+        <h2>Iniciar sesión</h2>
+        <p>Ingresa con tu correo o cuenta de Google</p>
+      </div>
+
+      <!-- Google button (renderizado por el SDK) -->
+      <div class="google-btn-wrap">
+        <div id="google-btn"></div>
+      </div>
+
+      <div class="divider"><span>o continúa con tu correo</span></div>
+
+      <!-- Email form -->
+      <form class="form" (ngSubmit)="onSendOtp()">
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="nombre@empresa.com"
+            autocomplete="email"
+            [class.error]="errorMsg()"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            [disabled]="loading()"
+          />
+        </div>
+
+        @if (errorMsg()) {
+          <p class="msg-error">{{ errorMsg() }}</p>
+        }
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="loading()"
+        >
+          @if (loading()) { <span class="spinner"></span> }
+          Continuar con correo
+        </button>
+      </form>
+    }
+
+    <!-- ── PASO 2: Código OTP ──────────────────────────────────────────── -->
+    @if (step() === 'otp') {
+
+      <div class="section-title">
+        <h2>Revisa tu correo</h2>
+        @if (successMsg()) {
+          <p>{{ successMsg() }}</p>
+        } @else {
+          <p>Ingresa el código de 6 dígitos que enviamos a <strong>{{ email() }}</strong></p>
+        }
+      </div>
+
+      <form class="form" (ngSubmit)="onVerifyOtp()">
+        <!-- OTP inputs -->
+        <div class="otp-group" (paste)="onDigitPaste($event)">
+          @for (digit of otpDigits(); track $index) {
+            <input
+              [id]="'otp-' + $index"
+              type="text"
+              inputmode="numeric"
+              maxlength="1"
+              class="otp-input"
+              [value]="digit"
+              (input)="onDigitInput($event, $index)"
+              (keydown)="onDigitKeydown($event, $index)"
+              [disabled]="loading()"
+              autocomplete="one-time-code"
+            />
+          }
+        </div>
+
+        @if (errorMsg()) {
+          <p class="msg-error">{{ errorMsg() }}</p>
+        }
+
+        <button type="submit" class="btn-primary" [disabled]="loading() || codeString().length < 6">
+          @if (loading()) { <span class="spinner"></span> }
+          Verificar código
+        </button>
+
+        <button type="button" class="btn-link" (click)="onBackToEmail()">
+          ← Cambiar correo
+        </button>
+
+        <button type="button" class="btn-link" [disabled]="loading()" (click)="onSendOtp()">
+          Reenviar código
+        </button>
+      </form>
+    }
+
+  </div>
+
+  <footer class="login-footer">
+    &copy; {{ currentYear }} Venturacom — Todos los derechos reservados
+  </footer>
+</div>
