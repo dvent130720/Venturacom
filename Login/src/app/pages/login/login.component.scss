@@ -176,6 +176,17 @@
   border-left: 3px solid var(--error);
 }
 
+.msg-warning {
+  color:     #92400e;
+  font-size: .8125rem;
+  padding:   10px 14px;
+  background: #fffbeb;
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
 /* ── OTP inputs ──────────────────────────────────────────────────────────── */
 .otp-group {
   display: flex;
@@ -205,6 +216,11 @@
   border-radius: 50%;
   animation: spin .7s linear infinite;
   display: inline-block;
+
+  &--dark {
+    border-color:     rgba(0,0,0,.15);
+    border-top-color: #4f46e5;
+  }
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */

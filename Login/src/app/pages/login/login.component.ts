@@ -3,12 +3,12 @@ import {
   signal, computed, NgZone,
   ChangeDetectionStrategy, AfterViewInit
 } from '@angular/core';
-import { CommonModule }        from '@angular/common';
-import { FormsModule }         from '@angular/forms';
-import { Router }              from '@angular/router';
-import { AuthService }         from '../../services/auth.service';
-import { environment }         from '../../../environments/environment';
-import { LoginStep }           from '../../models/auth.models';
+import { CommonModule }   from '@angular/common';
+import { FormsModule }    from '@angular/forms';
+import { Router }         from '@angular/router';
+import { AuthService }    from '../../services/auth.service';
+import { environment }    from '../../../environments/environment';
+import { LoginStep }      from '../../models/auth.models';
 
 declare const google: any;
 
@@ -35,6 +35,10 @@ export class LoginComponent implements OnInit, AfterViewInit {
   otpDigits  = signal<string[]>(['', '', '', '', '', '']);
   codeString = computed(() => this.otpDigits().join(''));
 
+  // Estado SDK Google
+  googleReady = signal(false);
+  googleError = signal('');
+
   readonly currentYear = new Date().getFullYear();
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -46,58 +50,78 @@ export class LoginComponent implements OnInit, AfterViewInit {
     this.initGoogleClient();
   }
 
-  // ── Google (OAuth2 Token Client) ──────────────────────────────────────────
+  // ── Google ────────────────────────────────────────────────────────────────
   private tokenClient: any;
+  private retryCount = 0;
+  private readonly MAX_RETRIES = 20; // 6 segundos máximo
 
   private initGoogleClient(): void {
-    const tryInit = () => {
-      if (typeof google === 'undefined' || !google?.accounts?.oauth2) {
-        setTimeout(tryInit, 300);
-        return;
-      }
+    if (this.retryCount >= this.MAX_RETRIES) {
+      this.zone.run(() =>
+        this.googleError.set('No se pudo cargar el SDK de Google. Verifica tu conexión.')
+      );
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google?.accounts?.oauth2) {
+      this.retryCount++;
+      setTimeout(() => this.initGoogleClient(), 300);
+      return;
+    }
+
+    try {
       this.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: environment.googleClientId,
         scope:     'openid email profile',
         callback:  (tokenResp: any) => {
-          this.zone.run(() => this.fetchGoogleUserAndLogin(tokenResp.access_token));
+          if (tokenResp.error) {
+            this.zone.run(() => {
+              this.loading.set(false);
+              this.errorMsg.set('Acceso con Google cancelado o denegado.');
+            });
+            return;
+          }
+          this.zone.run(() => this.handleGoogleToken(tokenResp.access_token));
+        },
+        error_callback: (err: any) => {
+          this.zone.run(() => {
+            this.loading.set(false);
+            if (err?.type !== 'popup_closed') {
+              this.errorMsg.set('Error al iniciar con Google. Intenta de nuevo.');
+            }
+          });
         },
       });
-    };
-    tryInit();
+      this.zone.run(() => this.googleReady.set(true));
+    } catch (err: any) {
+      this.zone.run(() =>
+        this.googleError.set(
+          'Error al inicializar Google Sign-In. ' +
+          (environment.googleClientId.includes('CHANGE_ME')
+            ? 'Configura el GOOGLE_CLIENT_ID en environment.ts'
+            : err?.message ?? '')
+        )
+      );
+    }
   }
 
   onGoogleLogin(): void {
     this.errorMsg.set('');
-    if (!this.tokenClient) {
-      this.errorMsg.set('El SDK de Google no está listo. Intenta de nuevo.');
-      return;
-    }
-    this.tokenClient.requestAccessToken();
+    this.loading.set(true);
+    this.tokenClient.requestAccessToken({ prompt: 'select_account' });
   }
 
-  private fetchGoogleUserAndLogin(accessToken: string): void {
-    this.loading.set(true);
-    // Obtenemos info del usuario con el access token para construir el id_token
-    // En GSI usamos el access_token para llamar a la API de userinfo
-    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then(r => r.json())
-      .then((info: any) => {
-        // Enviamos sub + email + name al backend como credencial verificable
-        // En producción deberías usar el flujo de id_token con renderButton o
-        // el authorization code flow. Para este caso enviamos el access_token
-        // y el backend lo valida contra Google's tokeninfo endpoint.
-        return this.auth.loginWithGoogleAccessToken(accessToken).toPromise();
-      })
-      .then((resp: any) => {
+  private handleGoogleToken(accessToken: string): void {
+    this.auth.loginWithGoogleAccessToken(accessToken).subscribe({
+      next: (resp) => {
         this.loading.set(false);
-        this.router.navigate(['/dashboard'], { state: { isNew: resp?.isNewUser } });
-      })
-      .catch((err: any) => {
+        this.router.navigate(['/dashboard'], { state: { isNew: resp.isNewUser } });
+      },
+      error: (err) => {
         this.loading.set(false);
         this.errorMsg.set(err?.error?.error ?? 'Error al iniciar con Google.');
-      });
+      },
+    });
   }
 
   // ── Email OTP flow ────────────────────────────────────────────────────────
