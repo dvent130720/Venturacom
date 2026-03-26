@@ -14,6 +14,9 @@ public record VerifyOtpRequest(
 public record GoogleLoginRequest(
     [Required] string IdToken);
 
+public record GoogleTokenRequest(
+    [Required] string AccessToken);
+
 public record RefreshRequest(
     [Required] string RefreshToken);
 

@@ -111,7 +111,7 @@ try
     builder.Services.AddScoped<OtpService>();
     builder.Services.AddScoped<EmailService>();
     builder.Services.AddScoped<TokenService>();
-    builder.Services.AddScoped<AuthService>();
+    builder.Services.AddHttpClient<AuthService>();
 
     // ── Jobs ───────────────────────────────────────────────────────────────
     builder.Services.AddScoped<SignInvoiceJob>();

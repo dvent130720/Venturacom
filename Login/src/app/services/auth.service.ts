@@ -32,9 +32,17 @@ export class AuthService {
 
   // ── Google ───────────────────────────────────────────────────────────────
 
+  /** Flujo con ID token (One Tap / renderButton) */
   loginWithGoogle(idToken: string): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${this.base}/google`, { idToken })
+      .pipe(tap(r => this.saveSession(r)));
+  }
+
+  /** Flujo con Access Token (OAuth2 initTokenClient) */
+  loginWithGoogleAccessToken(accessToken: string): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${this.base}/google/token`, { accessToken })
       .pipe(tap(r => this.saveSession(r)));
   }
 

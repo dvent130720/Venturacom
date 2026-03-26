@@ -1,6 +1,7 @@
 import {
-  Component, OnInit, OnDestroy, inject,
-  signal, computed, NgZone, ChangeDetectionStrategy
+  Component, OnInit, inject,
+  signal, computed, NgZone,
+  ChangeDetectionStrategy, AfterViewInit
 } from '@angular/core';
 import { CommonModule }        from '@angular/common';
 import { FormsModule }         from '@angular/forms';
@@ -19,47 +20,88 @@ declare const google: any;
   templateUrl: './login.component.html',
   styleUrls:   ['./login.component.scss'],
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent implements OnInit, AfterViewInit {
   private auth   = inject(AuthService);
   private router = inject(Router);
   private zone   = inject(NgZone);
 
   // ── Estado ───────────────────────────────────────────────────────────────
-  step      = signal<LoginStep>('initial');
-  email     = signal('');
-  otpCode   = signal('');
-  loading   = signal(false);
-  errorMsg  = signal('');
+  step       = signal<LoginStep>('initial');
+  email      = signal('');
+  loading    = signal(false);
+  errorMsg   = signal('');
   successMsg = signal('');
 
   otpDigits  = signal<string[]>(['', '', '', '', '', '']);
   codeString = computed(() => this.otpDigits().join(''));
 
+  readonly currentYear = new Date().getFullYear();
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
     if (this.auth.isLoggedIn) { this.router.navigate(['/dashboard']); return; }
-    this.initGoogleButton();
   }
 
-  ngOnDestroy(): void { /* cleanup si fuera necesario */ }
+  ngAfterViewInit(): void {
+    this.initGoogleClient();
+  }
 
-  private initGoogleButton(): void {
+  // ── Google (OAuth2 Token Client) ──────────────────────────────────────────
+  private tokenClient: any;
+
+  private initGoogleClient(): void {
     const tryInit = () => {
-      if (typeof google === 'undefined') { setTimeout(tryInit, 300); return; }
-      google.accounts.id.initialize({
+      if (typeof google === 'undefined' || !google?.accounts?.oauth2) {
+        setTimeout(tryInit, 300);
+        return;
+      }
+      this.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: environment.googleClientId,
-        callback:  (resp: any) => this.zone.run(() => this.handleGoogleResponse(resp)),
+        scope:     'openid email profile',
+        callback:  (tokenResp: any) => {
+          this.zone.run(() => this.fetchGoogleUserAndLogin(tokenResp.access_token));
+        },
       });
-      google.accounts.id.renderButton(
-        document.getElementById('google-btn'),
-        { theme: 'outline', size: 'large', width: 360, text: 'continue_with', shape: 'rectangular' }
-      );
     };
     tryInit();
   }
 
+  onGoogleLogin(): void {
+    this.errorMsg.set('');
+    if (!this.tokenClient) {
+      this.errorMsg.set('El SDK de Google no está listo. Intenta de nuevo.');
+      return;
+    }
+    this.tokenClient.requestAccessToken();
+  }
+
+  private fetchGoogleUserAndLogin(accessToken: string): void {
+    this.loading.set(true);
+    // Obtenemos info del usuario con el access token para construir el id_token
+    // En GSI usamos el access_token para llamar a la API de userinfo
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then(r => r.json())
+      .then((info: any) => {
+        // Enviamos sub + email + name al backend como credencial verificable
+        // En producción deberías usar el flujo de id_token con renderButton o
+        // el authorization code flow. Para este caso enviamos el access_token
+        // y el backend lo valida contra Google's tokeninfo endpoint.
+        return this.auth.loginWithGoogleAccessToken(accessToken).toPromise();
+      })
+      .then((resp: any) => {
+        this.loading.set(false);
+        this.router.navigate(['/dashboard'], { state: { isNew: resp?.isNewUser } });
+      })
+      .catch((err: any) => {
+        this.loading.set(false);
+        this.errorMsg.set(err?.error?.error ?? 'Error al iniciar con Google.');
+      });
+  }
+
   // ── Email OTP flow ────────────────────────────────────────────────────────
-  async onSendOtp(): Promise<void> {
+  onSendOtp(): void {
     const emailVal = this.email().trim();
     if (!emailVal || !this.isValidEmail(emailVal)) {
       this.errorMsg.set('Ingresa un correo válido.'); return;
@@ -80,7 +122,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
-  async onVerifyOtp(): Promise<void> {
+  onVerifyOtp(): void {
     const code = this.codeString();
     if (code.length !== 6) { this.errorMsg.set('Ingresa los 6 dígitos.'); return; }
     this.loading.set(true);
@@ -132,25 +174,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       event.preventDefault();
     }
   }
-
-  // ── Google ────────────────────────────────────────────────────────────────
-  private handleGoogleResponse(response: { credential: string }): void {
-    this.loading.set(true);
-    this.errorMsg.set('');
-
-    this.auth.loginWithGoogle(response.credential).subscribe({
-      next: (resp) => {
-        this.loading.set(false);
-        this.router.navigate(['/dashboard'], { state: { isNew: resp.isNewUser } });
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.errorMsg.set(err?.error?.error ?? 'Error al iniciar con Google.');
-      },
-    });
-  }
-
-  readonly currentYear = new Date().getFullYear();
 
   // ── Utils ─────────────────────────────────────────────────────────────────
   private isValidEmail(email: string): boolean {

@@ -97,6 +97,34 @@ public class AuthController : ControllerBase
         }
     }
 
+    // ── POST /api/auth/google/token ────────────────────────────────────────
+    /// <summary>
+    /// Valida un access token de Google (flujo initTokenClient del frontend).
+    /// </summary>
+    [HttpPost("google/token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleAccessToken([FromBody] GoogleTokenRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            var (user, isNew) = await _auth.FindOrCreateByGoogleAccessTokenAsync(req.AccessToken);
+            var pair          = await _tokens.CreateAsync(user);
+
+            return Ok(new AuthResponse(
+                pair.AccessToken,
+                pair.RefreshToken,
+                pair.ExpiresAt,
+                new UserDto(user.Id, user.Email, user.Name, user.AvatarUrl, user.Provider),
+                isNew));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+    }
+
     // ── POST /api/auth/refresh ──────────────────────────────────────────────
     /// <summary>Renueva el access token usando el refresh token de Redis.</summary>
     [HttpPost("refresh")]

@@ -69,10 +69,35 @@
 }
 
 /* ── Google button ───────────────────────────────────────────────────────── */
-.google-btn-wrap {
-  display:        flex;
+.btn-google {
+  display:         flex;
+  align-items:     center;
   justify-content: center;
-  margin-bottom:  20px;
+  gap:             10px;
+  width:           100%;
+  padding:         11px 20px;
+  background:      var(--white);
+  color:           #3c4043;
+  font-weight:     600;
+  font-size:       .9375rem;
+  border:          1.5px solid var(--border);
+  border-radius:   var(--radius);
+  margin-bottom:   20px;
+  transition:      background .18s, box-shadow .18s;
+
+  &:hover:not(:disabled) {
+    background:  #f8f9ff;
+    box-shadow:  0 1px 6px rgba(0,0,0,.12);
+    border-color: #c5c8d0;
+  }
+
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+
+.google-icon {
+  width:  22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 /* ── Divider ─────────────────────────────────────────────────────────────── */
