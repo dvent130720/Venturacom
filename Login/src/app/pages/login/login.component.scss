@@ -1,0 +1,248 @@
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.login-wrapper {
+  min-height: 100vh;
+  display:    flex;
+  flex-direction: column;
+  align-items:   center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f9fafb 60%, #ede9fe 100%);
+}
+
+.login-card {
+  background:    var(--white);
+  border-radius: 20px;
+  padding:       40px 40px 32px;
+  width:         100%;
+  max-width:     420px;
+  box-shadow:    var(--shadow);
+  animation:     fadeUp .35s ease;
+}
+
+/* ── Brand ──────────────────────────────────────────────────────────────── */
+.brand {
+  text-align: center;
+  margin-bottom: 28px;
+
+  &-icon {
+    display:         inline-flex;
+    align-items:     center;
+    justify-content: center;
+    width:  52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--primary);
+    color:       var(--white);
+    font-size:   1.6rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size:   1.5rem;
+    font-weight: 700;
+    color:       var(--text-main);
+  }
+
+  &-sub {
+    color:     var(--text-muted);
+    font-size: .875rem;
+    margin-top: 4px;
+  }
+}
+
+/* ── Section title ───────────────────────────────────────────────────────── */
+.section-title {
+  margin-bottom: 24px;
+
+  h2 {
+    font-size:   1.2rem;
+    font-weight: 700;
+    color:       var(--text-main);
+    margin-bottom: 4px;
+  }
+
+  p {
+    color:     var(--text-muted);
+    font-size: .875rem;
+  }
+}
+
+/* ── Google button ───────────────────────────────────────────────────────── */
+.btn-google {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             10px;
+  width:           100%;
+  padding:         11px 20px;
+  background:      var(--white);
+  color:           #3c4043;
+  font-weight:     600;
+  font-size:       .9375rem;
+  border:          1.5px solid var(--border);
+  border-radius:   var(--radius);
+  margin-bottom:   20px;
+  transition:      background .18s, box-shadow .18s;
+
+  &:hover:not(:disabled) {
+    background:  #f8f9ff;
+    box-shadow:  0 1px 6px rgba(0,0,0,.12);
+    border-color: #c5c8d0;
+  }
+
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+
+.google-icon {
+  width:  22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.divider {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  margin:      0 0 20px;
+  color:       var(--text-muted);
+  font-size:   .8125rem;
+
+  &::before, &::after {
+    content: '';
+    flex:    1;
+    height:  1px;
+    background: var(--border);
+  }
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+.form {
+  display:        flex;
+  flex-direction: column;
+  gap:            16px;
+}
+
+.field {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+
+  label {
+    font-size:   .8125rem;
+    font-weight: 600;
+    color:       var(--text-main);
+  }
+}
+
+/* ── Primary button ──────────────────────────────────────────────────────── */
+.btn-primary {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  padding:         13px 20px;
+  background:      var(--primary);
+  color:           var(--white);
+  font-weight:     600;
+  width:           100%;
+
+  &:hover:not(:disabled) { background: var(--primary-dark); }
+  &:disabled             { opacity: .6; cursor: not-allowed; }
+}
+
+/* ── Link button ─────────────────────────────────────────────────────────── */
+.btn-link {
+  background:  transparent;
+  color:       var(--primary);
+  font-size:   .875rem;
+  font-weight: 500;
+  padding:     4px 0;
+  border-radius: 0;
+  align-self:  center;
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled             { opacity: .5; cursor: not-allowed; }
+}
+
+/* ── Messages ────────────────────────────────────────────────────────────── */
+.msg-error {
+  color:     var(--error);
+  font-size: .8125rem;
+  padding:   8px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border-left: 3px solid var(--error);
+}
+
+.msg-warning {
+  color:     #92400e;
+  font-size: .8125rem;
+  padding:   10px 14px;
+  background: #fffbeb;
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* ── OTP inputs ──────────────────────────────────────────────────────────── */
+.otp-group {
+  display: flex;
+  gap:     10px;
+  justify-content: center;
+}
+
+.otp-input {
+  width:       48px;
+  height:      56px;
+  text-align:  center;
+  font-size:   1.5rem;
+  font-weight: 700;
+  border:      1.5px solid var(--border);
+  border-radius: 10px;
+  padding:     0;
+
+  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+  width:  18px;
+  height: 18px;
+  border: 2.5px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+
+  &--dark {
+    border-color:     rgba(0,0,0,.15);
+    border-top-color: #4f46e5;
+  }
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.login-footer {
+  color:     var(--text-muted);
+  font-size: .75rem;
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .login-card { padding: 32px 24px 28px; }
+  .otp-input  { width: 42px; height: 50px; font-size: 1.25rem; }
+}

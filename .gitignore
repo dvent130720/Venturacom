@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.nupkg
+*.snupkg
+
+# Publicación
+publish/
+out/
+
+# Secretos y certificados
+.env
+*.p12
+*.pfx
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# EF Core migrations (dejar solo si se usan migraciones versionadas)
+# src/VenturacomSri.Api/Migrations/
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml

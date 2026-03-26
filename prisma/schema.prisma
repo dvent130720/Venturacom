@@ -1,0 +1,152 @@
+// Prisma schema — Facturación Electrónica SRI Ecuador
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────
+// Certificado electrónico (P12)
+// ─────────────────────────────────────────────────────
+model Certificate {
+  id             String   @id @default(cuid())
+  name           String
+  ruc            String
+  // P12 cifrado con AES-256-GCM (base64 del buffer cifrado)
+  encryptedP12   String   @db.Text
+  // Contraseña del P12 cifrada con AES-256-GCM
+  encryptedPass  String
+  validFrom      DateTime
+  validUntil     DateTime
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  invoices       Invoice[]
+
+  @@index([ruc])
+  @@map("certificates")
+}
+
+// ─────────────────────────────────────────────────────
+// Factura
+// ─────────────────────────────────────────────────────
+model Invoice {
+  id             String        @id @default(cuid())
+  /// Clave de acceso SRI — 49 dígitos (única por comprobante)
+  accessKey      String        @unique @db.Char(49)
+  status         InvoiceStatus @default(DRAFT)
+  environment    Int           @default(1) // 1=pruebas, 2=producción
+
+  // Emisor
+  issuerRuc          String
+  issuerName         String
+  issuerTradeName    String?
+  issuerAddress      String
+  establishment      String  @db.Char(3)
+  emissionPoint      String  @db.Char(3)
+  sequential         String  @db.Char(9)
+  issueDate          DateTime
+
+  // Receptor
+  buyerIdType    String  @db.VarChar(2)  // 04=RUC, 05=cédula, 06=pasaporte, 07=consumidor final
+  buyerId        String
+  buyerName      String
+  buyerEmail     String?
+  buyerAddress   String?
+
+  // Totales
+  subtotal       Decimal @db.Decimal(14, 2)
+  totalDiscount  Decimal @db.Decimal(14, 2) @default(0)
+  totalIva       Decimal @db.Decimal(14, 2) @default(0)
+  totalAmount    Decimal @db.Decimal(14, 2)
+  tip            Decimal @db.Decimal(14, 2) @default(0)
+  currency       String  @default("DOLAR")
+
+  // Forma de pago
+  paymentMethod  String  @default("01") // 01=efectivo
+  paymentAmount  Decimal @db.Decimal(14, 2)
+
+  // XML
+  xmlContent     String?  @db.Text  // XML sin firmar
+  signedXml      String?  @db.Text  // XML con firma XAdES-BES
+  sriResponse    String?  @db.Text  // Respuesta recepción SRI (XML)
+  authXml        String?  @db.Text  // XML con autorización completa
+
+  // Autorización
+  authNumber     String?
+  authDate       DateTime?
+  rejectReason   String?  @db.Text
+
+  // Certificado usado para firmar
+  certificateId  String?
+  certificate    Certificate? @relation(fields: [certificateId], references: [id])
+
+  items          InvoiceItem[]
+  auditLogs      AuditLog[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([issuerRuc])
+  @@index([issueDate])
+  @@map("invoices")
+}
+
+// ─────────────────────────────────────────────────────
+// Ítem de factura
+// ─────────────────────────────────────────────────────
+model InvoiceItem {
+  id                   String  @id @default(cuid())
+  invoiceId            String
+  invoice              Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  mainCode             String?
+  auxCode              String?
+  description          String
+  quantity             Decimal @db.Decimal(14, 6)
+  unitPrice            Decimal @db.Decimal(14, 6)
+  discount             Decimal @db.Decimal(14, 2) @default(0)
+  subtotalNoTax        Decimal @db.Decimal(14, 2)
+
+  // IVA
+  taxCode              String  @default("2")           // 2=IVA
+  taxPercentageCode    String  @default("2")           // 0=0%, 2=12%, 10=15%
+  taxRate              Decimal @db.Decimal(5, 2)       // ej. 12.00
+  taxBase              Decimal @db.Decimal(14, 2)
+  taxValue             Decimal @db.Decimal(14, 2)
+
+  @@map("invoice_items")
+}
+
+// ─────────────────────────────────────────────────────
+// Auditoría
+// ─────────────────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(cuid())
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  action     String   // CREATED, SIGNED, SENT, AUTHORIZED, REJECTED, CANCELLED
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([invoiceId])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────
+// Enum de estados
+// ─────────────────────────────────────────────────────
+enum InvoiceStatus {
+  DRAFT        // Creada, sin firmar
+  SIGNED       // XML firmado con XAdES-BES
+  SENT         // Enviada a SRI, pendiente de respuesta
+  AUTHORIZED   // Autorizada por SRI
+  REJECTED     // Rechazada por SRI
+  CANCELLED    // Anulada
+}
