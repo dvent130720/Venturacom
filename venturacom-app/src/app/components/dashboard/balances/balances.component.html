@@ -1,0 +1,35 @@
+<div class="balances">
+  <h2 class="section-title">💰 Balances</h2>
+
+  <div class="summary-grid">
+    @for (s of summary; track s.label) {
+      <div class="summary-card" [style.border-left-color]="s.color">
+        <div class="summary-card__icon">{{ s.icon }}</div>
+        <div class="summary-card__body">
+          <div class="summary-value" [style.color]="s.color">{{ s.value }}</div>
+          <div class="summary-label">{{ s.label }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="movimientos">
+    <h3>Últimos movimientos</h3>
+    <div class="mov-list">
+      @for (m of movimientos; track m.descripcion) {
+        <div class="mov-item">
+          <div class="mov-icon" [class.ingreso]="m.tipo === 'ingreso'" [class.egreso]="m.tipo === 'egreso'">
+            {{ m.tipo === 'ingreso' ? '↓' : '↑' }}
+          </div>
+          <div class="mov-body">
+            <span class="mov-desc">{{ m.descripcion }}</span>
+            <span class="mov-fecha">{{ m.fecha }}</span>
+          </div>
+          <div class="mov-monto" [class.ingreso]="m.tipo === 'ingreso'" [class.egreso]="m.tipo === 'egreso'">
+            {{ m.monto }}
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

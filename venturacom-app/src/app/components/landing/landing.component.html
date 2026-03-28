@@ -1,0 +1,97 @@
+<app-navbar (openLogin)="showLogin.set(true)" />
+
+<!-- HERO -->
+<section id="hero" class="hero">
+  <div class="hero__glow"></div>
+  <div class="hero__content" @fadeUp>
+    <span class="hero__badge">Tecnología para tu empresa</span>
+    <h1 class="hero__title">Soluciones <span class="gradient-text">tecnológicas</span><br/>a tu medida</h1>
+    <p class="hero__subtitle">
+      En VenturaComp ofrecemos productos y servicios de TI que impulsan el crecimiento
+      de tu empresa con calidad y soporte excepcional.
+    </p>
+    <div class="hero__ctas">
+      <button class="cta-primary" (click)="showLogin.set(true)">Comenzar ahora</button>
+      <button class="cta-secondary" onclick="document.getElementById('productos').scrollIntoView({behavior:'smooth'})">
+        Ver productos ↓
+      </button>
+    </div>
+  </div>
+  <div class="hero__visual">
+    <div class="hero__orb orb1"></div>
+    <div class="hero__orb orb2"></div>
+    <div class="hero__orb orb3"></div>
+    <div class="hero__card-float">
+      <div class="stat-card"><span class="stat-num">+500</span><span class="stat-label">Clientes</span></div>
+      <div class="stat-card"><span class="stat-num">99.9%</span><span class="stat-label">Uptime</span></div>
+      <div class="stat-card"><span class="stat-num">24/7</span><span class="stat-label">Soporte</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTOS -->
+<section id="productos" class="section">
+  <div class="section__header" @fadeUp>
+    <span class="section__tag">Catálogo</span>
+    <h2>Nuestros <span class="gradient-text">Productos</span></h2>
+    <p>Hardware y equipos de las mejores marcas del mercado.</p>
+  </div>
+  <div class="cards-grid" @staggerCards>
+    @for (p of products; track p.title) {
+      <div class="card">
+        <div class="card__icon">{{ p.icon }}</div>
+        <h3>{{ p.title }}</h3>
+        <p>{{ p.desc }}</p>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- SERVICIOS -->
+<section id="servicios" class="section section--alt">
+  <div class="section__header" @fadeUp>
+    <span class="section__tag">Lo que hacemos</span>
+    <h2>Nuestros <span class="gradient-text">Servicios</span></h2>
+    <p>Acompañamos a tu empresa en cada paso de su transformación digital.</p>
+  </div>
+  <div class="cards-grid cards-grid--3" @staggerCards>
+    @for (s of services; track s.title) {
+      <div class="card card--service">
+        <div class="card__icon">{{ s.icon }}</div>
+        <h3>{{ s.title }}</h3>
+        <p>{{ s.desc }}</p>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- QUIÉNES SOMOS -->
+<section id="nosotros" class="section">
+  <div class="section__header" @fadeUp>
+    <span class="section__tag">El equipo</span>
+    <h2>Quiénes <span class="gradient-text">Somos</span></h2>
+    <p>Un equipo apasionado por la tecnología con más de 10 años de experiencia.</p>
+  </div>
+  <div class="team-grid" @staggerCards>
+    @for (m of team; track m.name) {
+      <div class="card card--team">
+        <div class="team-avatar">{{ m.emoji }}</div>
+        <h3>{{ m.name }}</h3>
+        <span class="team-role">{{ m.role }}</span>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__brand">
+    <span>Ventura<strong>Comp</strong></span>
+    <p>© 2024 VenturaComp. Todos los derechos reservados.</p>
+  </div>
+</footer>
+
+<!-- LOGIN MODAL -->
+@if (showLogin()) {
+  <app-login-modal (close)="showLogin.set(false)" />
+}

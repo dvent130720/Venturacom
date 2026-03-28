@@ -1,0 +1,48 @@
+<div class="otp-backdrop">
+  <div class="otp-float" @floatIn (click)="$event.stopPropagation()">
+
+    <div class="otp-float__icon">📬</div>
+    <h3>Revisa tu correo</h3>
+    <p>Enviamos un código de 6 dígitos a<br/><strong>{{ email() }}</strong></p>
+
+    <div class="otp-inputs" (paste)="onPaste($event)">
+      @for (d of digits(); track i; let i = $index) {
+        <input
+          #digitInput
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-digit"
+          [class.filled]="d"
+          [value]="d"
+          (input)="onDigitInput(i, $event)"
+          (keydown)="onKeyDown(i, $event)"
+          [disabled]="loading()"
+        />
+      }
+    </div>
+
+    @if (error()) {
+      <div class="otp-error">{{ error() }}</div>
+    }
+
+    <button class="btn-verify" (click)="verify()" [disabled]="loading() || digits().join('').length < 6">
+      @if (loading()) {
+        <span class="spinner"></span>
+      } @else {
+        Verificar código
+      }
+    </button>
+
+    <div class="otp-resend">
+      @if (resendCountdown() > 0) {
+        <span>Reenviar en {{ resendCountdown() }}s</span>
+      } @else {
+        <button (click)="resend()">Reenviar código</button>
+      }
+    </div>
+
+    <button class="btn-back" (click)="back.emit()">← Cambiar correo</button>
+
+  </div>
+</div>

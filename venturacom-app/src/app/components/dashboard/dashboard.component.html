@@ -1,0 +1,32 @@
+<div class="dash-layout">
+  <app-sidebar
+    [active]="activeSection()"
+    (navigate)="activeSection.set($event)"
+    (logout)="auth.logout()"
+    [user]="auth.currentUser()"
+  />
+
+  <main class="dash-main">
+    <div class="dash-main__topbar">
+      <div class="topbar-greeting">
+        <span class="topbar-hi">👋 Hola,</span>
+        <strong>{{ auth.currentUser()?.name ?? auth.currentUser()?.email }}</strong>
+      </div>
+      <div class="topbar-date">{{ today }}</div>
+    </div>
+
+    <div class="dash-main__content">
+      @switch (activeSection()) {
+        @case ('ventas') {
+          <div @fadeSection><app-ventas /></div>
+        }
+        @case ('balances') {
+          <div @fadeSection><app-balances /></div>
+        }
+        @case ('ia') {
+          <div @fadeSection><app-ia-module /></div>
+        }
+      }
+    </div>
+  </main>
+</div>

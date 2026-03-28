@@ -1,0 +1,68 @@
+<div class="ia-wrap">
+  <div class="ia-header">
+    <div class="ia-header__left">
+      <div class="ia-avatar">🤖</div>
+      <div>
+        <h2>Módulo IA</h2>
+        <span class="ia-status">
+          <span class="dot"></span> En línea
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    @for (msg of messages(); track $index) {
+      <div class="msg" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+        @if (msg.role === 'assistant') {
+          <div class="msg__avatar">🤖</div>
+        }
+        <div class="msg__bubble">
+          <p>{{ msg.content }}</p>
+          <span class="msg__time">{{ msg.time }}</span>
+        </div>
+        @if (msg.role === 'user') {
+          <div class="msg__avatar user-av">👤</div>
+        }
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="msg assistant">
+        <div class="msg__avatar">🤖</div>
+        <div class="msg__bubble typing">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    }
+
+    <div #chatEnd></div>
+  </div>
+
+  @if (messages().length === 1) {
+    <div class="suggestions">
+      @for (s of suggestions; track s) {
+        <button class="suggestion-chip" (click)="sendSuggestion(s)">{{ s }}</button>
+      }
+    </div>
+  }
+
+  <div class="ia-input-bar">
+    <input
+      type="text"
+      placeholder="Escribe tu pregunta..."
+      [ngModel]="input()"
+      (ngModelChange)="input.set($event)"
+      (keyup.enter)="send()"
+      [disabled]="loading()"
+      class="ia-input"
+    />
+    <button class="ia-send" (click)="send()" [disabled]="loading() || !input().trim()">
+      @if (loading()) {
+        <span class="spinner"></span>
+      } @else {
+        ➤
+      }
+    </button>
+  </div>
+</div>
