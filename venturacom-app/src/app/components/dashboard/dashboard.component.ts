@@ -1,6 +1,8 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { trigger, style, transition, animate } from '@angular/animations';
+import {
+  trigger, style, transition, animate, query, group
+} from '@angular/animations';
 import { AuthService } from '../../services/auth.service';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { VentasComponent } from './ventas/ventas.component';
@@ -16,10 +18,17 @@ export type DashSection = 'ventas' | 'balances' | 'ia';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   animations: [
-    trigger('fadeSection', [
-      transition(':enter', [
-        style({ opacity: 0, transform: 'translateX(12px)' }),
-        animate('250ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+    trigger('sectionSlide', [
+      transition('* => *', [
+        query(':enter', [
+          style({ opacity: 0, transform: 'translateX(18px)' })
+        ], { optional: true }),
+        query(':leave', [
+          animate('160ms ease', style({ opacity: 0, transform: 'translateX(-12px)' }))
+        ], { optional: true }),
+        query(':enter', [
+          animate('240ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
+        ], { optional: true }),
       ])
     ])
   ]
@@ -29,6 +38,8 @@ export class DashboardComponent {
   activeSection = signal<DashSection>('ventas');
 
   get today(): string {
-    return new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    return new Date().toLocaleDateString('es-MX', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
   }
 }

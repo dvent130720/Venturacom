@@ -1,1 +1,3 @@
-<router-outlet />
+<div class="app-wrap" [@routeTransition]="getRouteData(outlet)">
+  <router-outlet #outlet="outlet" />
+</div>

@@ -1,7 +1,12 @@
-import { Component, inject, input, output, signal, ViewChildren, QueryList, ElementRef, AfterViewInit } from '@angular/core';
+import {
+  Component, inject, input, output, signal,
+  ViewChildren, QueryList, ElementRef, AfterViewInit
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { trigger, style, transition, animate } from '@angular/animations';
+import {
+  trigger, style, transition, animate, keyframes
+} from '@angular/animations';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
@@ -14,10 +19,26 @@ import { Router } from '@angular/router';
   animations: [
     trigger('floatIn', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'scale(0.9) translateY(20px)' }),
-        animate('300ms cubic-bezier(.34,1.56,.64,1)', style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
+        style({ opacity: 0, transform: 'scale(0.88) translateY(24px)' }),
+        animate('350ms cubic-bezier(.34,1.56,.64,1)', style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
       ])
-    ])
+    ]),
+    trigger('shake', [
+      transition('* => shake', animate('400ms', keyframes([
+        style({ transform: 'translateX(0)', offset: 0 }),
+        style({ transform: 'translateX(-10px)', offset: 0.2 }),
+        style({ transform: 'translateX(10px)', offset: 0.4 }),
+        style({ transform: 'translateX(-8px)', offset: 0.6 }),
+        style({ transform: 'translateX(8px)', offset: 0.8 }),
+        style({ transform: 'translateX(0)', offset: 1 }),
+      ])))
+    ]),
+    trigger('successPop', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.5)' }),
+        animate('300ms cubic-bezier(.34,1.56,.64,1)', style({ opacity: 1, transform: 'scale(1)' }))
+      ])
+    ]),
   ]
 })
 export class OtpModalComponent implements AfterViewInit {
@@ -32,12 +53,14 @@ export class OtpModalComponent implements AfterViewInit {
 
   digits = signal<string[]>(['', '', '', '', '', '']);
   loading = signal(false);
+  success = signal(false);
   error = signal('');
+  shakeState = signal('idle');
   resendCountdown = signal(30);
   private countdownTimer?: ReturnType<typeof setInterval>;
 
   ngAfterViewInit(): void {
-    setTimeout(() => this.digitInputs.first?.nativeElement.focus(), 100);
+    setTimeout(() => this.digitInputs.first?.nativeElement.focus(), 120);
     this.startCountdown();
   }
 
@@ -61,12 +84,15 @@ export class OtpModalComponent implements AfterViewInit {
       this.digitInputs.get(index + 1)?.nativeElement.focus();
     }
     if (arr.every(d => d) && arr.join('').length === 6) {
-      this.verify();
+      setTimeout(() => this.verify(), 80);
     }
   }
 
   onKeyDown(index: number, event: KeyboardEvent): void {
     if (event.key === 'Backspace' && !this.digits()[index] && index > 0) {
+      const arr = [...this.digits()];
+      arr[index - 1] = '';
+      this.digits.set(arr);
       this.digitInputs.get(index - 1)?.nativeElement.focus();
     }
   }
@@ -87,28 +113,33 @@ export class OtpModalComponent implements AfterViewInit {
     if (code.length !== 6) { this.error.set('Ingresa el código completo'); return; }
     this.error.set('');
     this.loading.set(true);
+
+    // Backend expects: { email, code }
     this.auth.verifyOtp(this.email(), code).subscribe({
       next: () => {
         this.loading.set(false);
-        this.verified.emit();
-        this.router.navigate(['/dashboard']);
+        this.success.set(true);
+        setTimeout(() => {
+          this.verified.emit();
+          this.router.navigate(['/dashboard']);
+        }, 900);
       },
       error: (err) => {
         this.loading.set(false);
         this.error.set(err?.error?.message ?? 'Código incorrecto. Intenta de nuevo.');
         this.digits.set(['', '', '', '', '', '']);
-        setTimeout(() => this.digitInputs.first?.nativeElement.focus(), 50);
+        this.shakeState.set('shake');
+        setTimeout(() => { this.shakeState.set('idle'); this.digitInputs.first?.nativeElement.focus(); }, 420);
       }
     });
   }
 
   resend(): void {
     if (this.resendCountdown() > 0) return;
+    this.error.set('');
     this.auth.sendOtp(this.email()).subscribe({
-      next: () => this.startCountdown(),
+      next: () => { this.startCountdown(); this.digits.set(['', '', '', '', '', '']); },
       error: () => this.error.set('Error al reenviar. Intenta de nuevo.')
     });
   }
-
-  trackByIndex(index: number): number { return index; }
 }
