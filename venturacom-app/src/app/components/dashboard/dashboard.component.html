@@ -1,0 +1,37 @@
+<div class="dash-layout">
+  <app-sidebar
+    [active]="activeSection()"
+    (navigate)="activeSection.set($event)"
+    (logout)="auth.logout()"
+    [user]="auth.currentUser()"
+  />
+
+  <main class="dash-main">
+    <div class="dash-main__topbar">
+      <div class="topbar-greeting">
+        <span class="topbar-wave">👋</span>
+        <span>Hola, <strong>{{ auth.currentUser()?.name ?? auth.currentUser()?.email }}</strong></span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date">{{ today }}</div>
+        <div class="topbar-avatar" [title]="auth.currentUser()?.email ?? ''">
+          {{ (auth.currentUser()?.name ?? auth.currentUser()?.email ?? 'U').charAt(0).toUpperCase() }}
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-main__content" [@sectionFade]="activeSection()">
+      @switch (activeSection()) {
+        @case ('ventas') {
+          <div class="section-wrap"><app-ventas /></div>
+        }
+        @case ('balances') {
+          <div class="section-wrap"><app-balances /></div>
+        }
+        @case ('ia') {
+          <div class="section-wrap ia-wrap-outer"><app-ia-module /></div>
+        }
+      }
+    </div>
+  </main>
+</div>

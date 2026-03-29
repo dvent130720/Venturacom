@@ -1,0 +1,51 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+
+  <div class="sidebar__header">
+    <div class="sidebar__brand">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+        <rect width="40" height="40" rx="8" fill="#6C63FF"/>
+        <path d="M8 28L16 12L24 28" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10.5 22H21.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="30" cy="20" r="5" fill="#A78BFA"/>
+      </svg>
+      @if (!collapsed) {
+        <span>Ventura<strong>Comp</strong></span>
+      }
+    </div>
+    <button class="sidebar__toggle" (click)="collapsed = !collapsed">
+      {{ collapsed ? '→' : '←' }}
+    </button>
+  </div>
+
+  <nav class="sidebar__nav">
+    @for (item of navItems; track item.id) {
+      <button
+        class="sidebar__item"
+        [class.active]="active() === item.id"
+        (click)="navigate.emit(item.id)"
+        [title]="item.label"
+      >
+        <span class="sidebar__item-icon">{{ item.icon }}</span>
+        @if (!collapsed) {
+          <span class="sidebar__item-label">{{ item.label }}</span>
+        }
+      </button>
+    }
+  </nav>
+
+  <div class="sidebar__footer">
+    <div class="sidebar__user">
+      <div class="user-avatar">{{ initials() }}</div>
+      @if (!collapsed) {
+        <div class="user-info">
+          <span class="user-name">{{ user()?.name ?? user()?.email }}</span>
+          <span class="user-email">{{ user()?.email }}</span>
+        </div>
+      }
+    </div>
+    <button class="sidebar__logout" (click)="logout.emit()" [title]="'Cerrar sesión'">
+      @if (collapsed) { 🚪 } @else { 🚪 Salir }
+    </button>
+  </div>
+
+</aside>

@@ -1,0 +1,62 @@
+<nav class="navbar" [class.scrolled]="scrolled()">
+  <div class="navbar__brand" (click)="scrollTo('hero')">
+    <div class="navbar__logo">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="8" fill="#6C63FF"/>
+        <path d="M8 28L16 12L24 28" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10.5 22H21.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="30" cy="20" r="5" fill="#A78BFA"/>
+      </svg>
+    </div>
+    <span class="navbar__name">Ventura<strong>Comp</strong></span>
+  </div>
+
+  <!-- Desktop links -->
+  <div class="navbar__links">
+    @for (section of sections; track section.anchor) {
+      <button class="navbar__link" (click)="scrollTo(section.anchor)">{{ section.label }}</button>
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="navbar__actions">
+    @if (auth.isAuthenticated()) {
+      <button class="btn-dashboard" (click)="goToDashboard()">
+        <span>Dashboard</span>
+        <span class="btn-icon">→</span>
+      </button>
+      <button class="btn-logout" (click)="auth.logout()">Salir</button>
+    } @else {
+      <button class="btn-login" (click)="openLogin.emit()">
+        Login
+        <span class="btn-dot"></span>
+      </button>
+    }
+  </div>
+
+  <!-- Hamburger -->
+  <button
+    class="navbar__hamburger"
+    [class.open]="mobileOpen()"
+    (click)="mobileOpen.set(!mobileOpen())"
+    aria-label="Menú"
+  >
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Mobile menu -->
+  @if (mobileOpen()) {
+    <div class="navbar__mobile" @mobileMenu>
+      @for (section of sections; track section.anchor) {
+        <button class="navbar__mobile-link" (click)="scrollTo(section.anchor)">{{ section.label }}</button>
+      }
+      <div class="navbar__mobile-actions">
+        @if (auth.isAuthenticated()) {
+          <button class="btn-dashboard w-full" (click)="goToDashboard()">Dashboard</button>
+        } @else {
+          <button class="btn-login w-full" (click)="openLogin.emit(); mobileOpen.set(false)">Login</button>
+        }
+      </div>
+    </div>
+  }
+</nav>

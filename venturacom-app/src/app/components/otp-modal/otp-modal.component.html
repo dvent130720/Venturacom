@@ -1,0 +1,68 @@
+<div class="otp-backdrop">
+  <div class="otp-float" @floatIn (click)="$event.stopPropagation()">
+
+    @if (success()) {
+      <div class="success-state" @successPop>
+        <div class="success-icon">✅</div>
+        <h3>¡Verificado!</h3>
+        <p>Ingresando a tu panel...</p>
+      </div>
+    } @else {
+
+      <div class="otp-float__header">
+        <div class="otp-envelope">📬</div>
+        <h3>Código enviado</h3>
+        <p>Ingresa el código de 6 dígitos enviado a<br/><strong>{{ email() }}</strong></p>
+      </div>
+
+      <div [@shake]="shakeState()" class="otp-inputs-wrap">
+        <div class="otp-inputs" (paste)="onPaste($event)">
+          @for (d of digits(); track i; let i = $index) {
+            <input
+              #digitInput
+              type="text"
+              inputmode="numeric"
+              maxlength="1"
+              class="otp-digit"
+              [class.filled]="d"
+              [class.loading]="loading()"
+              [value]="d"
+              (input)="onDigitInput(i, $event)"
+              (keydown)="onKeyDown(i, $event)"
+              [disabled]="loading()"
+            />
+          }
+        </div>
+
+        @if (error()) {
+          <div class="otp-error">⚠ {{ error() }}</div>
+        }
+      </div>
+
+      <button
+        class="btn-verify"
+        (click)="verify()"
+        [disabled]="loading() || digits().join('').length < 6"
+      >
+        @if (loading()) {
+          <span class="spinner"></span>
+          Verificando...
+        } @else {
+          Verificar código ✓
+        }
+      </button>
+
+      <div class="otp-footer">
+        <div class="otp-resend">
+          @if (resendCountdown() > 0) {
+            <span class="countdown">Reenviar en <strong>{{ resendCountdown() }}s</strong></span>
+          } @else {
+            <button class="btn-resend" (click)="resend()">↻ Reenviar código</button>
+          }
+        </div>
+        <button class="btn-back" (click)="back.emit()">← Cambiar correo</button>
+      </div>
+
+    }
+  </div>
+</div>

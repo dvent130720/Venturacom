@@ -1,0 +1,42 @@
+<div class="ventas">
+  <h2 class="section-title">📊 Ventas</h2>
+
+  <div class="stats-grid">
+    @for (s of stats; track s.label) {
+      <div class="stat-card">
+        <div class="stat-card__top">
+          <span class="stat-icon">{{ s.icon }}</span>
+          <span class="stat-delta" [class.up]="s.up" [class.down]="!s.up">{{ s.delta }}</span>
+        </div>
+        <div class="stat-value">{{ s.value }}</div>
+        <div class="stat-label">{{ s.label }}</div>
+      </div>
+    }
+  </div>
+
+  <div class="table-section">
+    <h3>Ventas recientes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Producto</th>
+            <th>Monto</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of recientes; track row.cliente) {
+            <tr>
+              <td>{{ row.cliente }}</td>
+              <td>{{ row.producto }}</td>
+              <td class="monto">{{ row.monto }}</td>
+              <td><span class="status-badge" [class]="statusClass(row.estado)">{{ row.estado }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
