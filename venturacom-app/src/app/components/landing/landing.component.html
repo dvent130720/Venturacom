@@ -5,25 +5,34 @@
   <div class="hero__glow"></div>
   <div class="hero__glow hero__glow--2"></div>
 
-  <div class="hero__content" @heroEnter>
-    <span class="hero__badge">✦ Tecnología para tu empresa</span>
-    <h1 class="hero__title">Soluciones <span class="gradient-text">tecnológicas</span><br/>a tu medida</h1>
-    <p class="hero__subtitle">
+  <div class="hero__content">
+    <span class="hero__badge"
+      [@fadeUp]="{ value: '', params: { delay: 0, duration: 550 } }">
+      ✦ Tecnología para tu empresa
+    </span>
+    <h1 class="hero__title"
+      [@fadeUp]="{ value: '', params: { delay: 100, duration: 600 } }">
+      Soluciones <span class="gradient-text">tecnológicas</span><br/>a tu medida
+    </h1>
+    <p class="hero__subtitle"
+      [@fadeUp]="{ value: '', params: { delay: 200, duration: 600 } }">
       En VenturaComp ofrecemos hardware, software y servicios de TI que
       impulsan el crecimiento de tu empresa con calidad y soporte excepcional.
     </p>
-    <div class="hero__ctas">
+    <div class="hero__ctas"
+      [@fadeUp]="{ value: '', params: { delay: 320, duration: 550 } }">
       <button class="cta-primary" (click)="showLogin.set(true)">
         Comenzar ahora
         <span class="cta-primary__arrow">→</span>
       </button>
-      <button class="cta-secondary" onclick="document.getElementById('productos').scrollIntoView({behavior:'smooth'})">
+      <button class="cta-secondary"
+        onclick="document.getElementById('productos').scrollIntoView({behavior:'smooth'})">
         Ver productos ↓
       </button>
     </div>
   </div>
 
-  <div class="hero__visual" @floatCards>
+  <div class="hero__visual" @floatIn>
     <div class="hero__orb orb1"></div>
     <div class="hero__orb orb2"></div>
     <div class="hero__orb orb3"></div>
@@ -49,10 +58,7 @@
 
 <!-- ───────── PRODUCTOS ───────── -->
 <section id="productos" class="section">
-  <div
-    class="section__header"
-    [@sectionReveal]="productosVisible()"
-  >
+  <div class="section__header" [@sectionReveal]="productosVisible()">
     <span class="section__tag">Catálogo</span>
     <h2>Nuestros <span class="gradient-text">Productos</span></h2>
     <p>Hardware y equipos de las mejores marcas del mercado.</p>
@@ -71,10 +77,7 @@
 
 <!-- ───────── SERVICIOS ───────── -->
 <section id="servicios" class="section section--alt">
-  <div
-    class="section__header"
-    [@sectionReveal]="serviciosVisible()"
-  >
+  <div class="section__header" [@sectionReveal]="serviciosVisible()">
     <span class="section__tag">Lo que hacemos</span>
     <h2>Nuestros <span class="gradient-text">Servicios</span></h2>
     <p>Acompañamos a tu empresa en cada paso de su transformación digital.</p>
@@ -93,10 +96,7 @@
 
 <!-- ───────── QUIÉNES SOMOS ───────── -->
 <section id="nosotros" class="section">
-  <div
-    class="section__header"
-    [@sectionReveal]="nosotrosVisible()"
-  >
+  <div class="section__header" [@sectionReveal]="nosotrosVisible()">
     <span class="section__tag">El equipo</span>
     <h2>Quiénes <span class="gradient-text">Somos</span></h2>
     <p>Un equipo apasionado por la tecnología con más de 10 años de experiencia.</p>
@@ -114,8 +114,8 @@
 </section>
 
 <!-- ───────── CTA FINAL ───────── -->
-<section class="section section--cta" [@sectionReveal]="nosotrosVisible()">
-  <div class="cta-banner">
+<section class="section section--cta">
+  <div class="cta-banner" [@sectionReveal]="nosotrosVisible()">
     <h2>¿Listo para <span class="gradient-text">transformar</span> tu empresa?</h2>
     <p>Únete a cientos de empresas que ya confían en VenturaComp.</p>
     <button class="cta-primary cta-primary--large" (click)="showLogin.set(true)">

@@ -1,7 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  trigger, style, transition, animate, query, group
+  trigger, style, transition, animate
 } from '@angular/animations';
 import { AuthService } from '../../services/auth.service';
 import { SidebarComponent } from './sidebar/sidebar.component';
@@ -18,17 +18,10 @@ export type DashSection = 'ventas' | 'balances' | 'ia';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   animations: [
-    trigger('sectionSlide', [
+    trigger('sectionFade', [
       transition('* => *', [
-        query(':enter', [
-          style({ opacity: 0, transform: 'translateX(18px)' })
-        ], { optional: true }),
-        query(':leave', [
-          animate('160ms ease', style({ opacity: 0, transform: 'translateX(-12px)' }))
-        ], { optional: true }),
-        query(':enter', [
-          animate('240ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
-        ], { optional: true }),
+        style({ opacity: 0, transform: 'translateX(10px)' }),
+        animate('220ms ease', style({ opacity: 1, transform: 'translateX(0)' }))
       ])
     ])
   ]

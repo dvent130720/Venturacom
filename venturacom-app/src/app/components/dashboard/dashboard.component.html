@@ -20,7 +20,7 @@
       </div>
     </div>
 
-    <div class="dash-main__content" [@sectionSlide]="activeSection()">
+    <div class="dash-main__content" [@sectionFade]="activeSection()">
       @switch (activeSection()) {
         @case ('ventas') {
           <div class="section-wrap"><app-ventas /></div>
