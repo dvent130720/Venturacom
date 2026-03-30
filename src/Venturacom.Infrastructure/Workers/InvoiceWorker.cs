@@ -10,23 +10,27 @@ using Venturacom.Infrastructure.Services;
 
 namespace Venturacom.Infrastructure.Workers;
 
-public sealed class InvoiceWorker(IServiceProvider serviceProvider, IInvoiceQueue queue, ILogger<InvoiceWorker> logger) : BackgroundService
+public sealed class InvoiceWorker(IServiceProvider serviceProvider, ILogger<InvoiceWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var jobId = await queue.ConsumeAsync(stoppingToken);
-            if (jobId is null) continue;
-
             using var scope = serviceProvider.CreateScope();
+            var queue = scope.ServiceProvider.GetRequiredService<IInvoiceQueue>();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var sriService = scope.ServiceProvider.GetRequiredService<ISriXmlService>();
+
+            var jobId = await queue.ConsumeAsync(stoppingToken);
+            if (jobId is null)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(150), stoppingToken);
+                continue;
+            }
 
             var job = await dbContext.InvoiceJobs.Include(x => x.Invoice).FirstOrDefaultAsync(x => x.Id == jobId, stoppingToken);
             if (job is null) continue;
 
-            job.Status = InvoiceJobStatus.Processing;
             job.Invoice.Status = InvoiceStatus.Processing;
             await dbContext.SaveChangesAsync(stoppingToken);
 
@@ -50,12 +54,6 @@ public sealed class InvoiceWorker(IServiceProvider serviceProvider, IInvoiceQueu
                 job.Invoice.Status = InvoiceStatus.Pending;
                 job.ScheduledAtUtc = DateTime.UtcNow.AddSeconds(Math.Min(300, Math.Pow(2, job.RetryCount)));
                 await dbContext.SaveChangesAsync(stoppingToken);
-
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(job.ScheduledAtUtc - DateTime.UtcNow, stoppingToken);
-                    await queue.PublishAsync(job.Id, stoppingToken);
-                }, stoppingToken);
 
                 logger.LogWarning(ex, "Invoice job {JobId} failed", job.Id);
             }

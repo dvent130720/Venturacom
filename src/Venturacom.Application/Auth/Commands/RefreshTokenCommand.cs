@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Venturacom.Application.Abstractions.Auth;
 using Venturacom.Application.Abstractions.Persistence;
 using Venturacom.Application.Auth.DTOs;
+using Venturacom.Application.Auth.Security;
 using Venturacom.Domain.Entities;
 
 namespace Venturacom.Application.Auth.Commands;
@@ -17,7 +18,7 @@ public sealed class RefreshTokenCommandHandler(
     {
         var storedToken = await dbContext.RefreshTokens
             .Include(x => x.User)
-            .FirstOrDefaultAsync(x => x.Token == request.RefreshToken, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Token == RefreshTokenHasher.Hash(request.RefreshToken), cancellationToken)
             ?? throw new UnauthorizedAccessException("Invalid refresh token.");
 
         if (storedToken.IsExpired || storedToken.IsRevoked)
@@ -27,19 +28,19 @@ public sealed class RefreshTokenCommandHandler(
 
         storedToken.RevokedAtUtc = DateTime.UtcNow;
         var replacementRaw = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        storedToken.ReplacedByToken = replacementRaw;
+        storedToken.ReplacedByToken = RefreshTokenHasher.Hash(replacementRaw);
 
         var replacement = new RefreshToken
         {
             TenantId = storedToken.TenantId,
             UserId = storedToken.UserId,
-            Token = replacementRaw,
+            Token = RefreshTokenHasher.Hash(replacementRaw),
             ExpiresAtUtc = DateTime.UtcNow.AddDays(15)
         };
 
         await dbContext.RefreshTokens.AddAsync(replacement, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new AuthTokensDto(tokenGenerator.Generate(storedToken.User), replacement.Token, replacement.ExpiresAtUtc);
+        return new AuthTokensDto(tokenGenerator.Generate(storedToken.User), replacementRaw, replacement.ExpiresAtUtc);
     }
 }

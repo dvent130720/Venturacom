@@ -24,18 +24,41 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType) && entityType.ClrType != typeof(Tenant))
+            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
-                var method = typeof(ApplicationDbContext)
-                    .GetMethod(nameof(SetTenantFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
-                    .MakeGenericMethod(entityType.ClrType);
-                method.Invoke(null, [modelBuilder, tenantContext]);
+                continue;
             }
+
+            modelBuilder.Entity(entityType.ClrType).Property(nameof(BaseEntity.RowVersion)).IsRowVersion();
+
+            if (entityType.ClrType == typeof(Tenant))
+            {
+                continue;
+            }
+
+            var method = typeof(ApplicationDbContext)
+                .GetMethod(nameof(SetTenantFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                .MakeGenericMethod(entityType.ClrType);
+            method.Invoke(null, [modelBuilder, tenantContext]);
         }
     }
 
     private static void SetTenantFilter<TEntity>(ModelBuilder modelBuilder, ITenantContext tenantContext) where TEntity : BaseEntity
     {
         modelBuilder.Entity<TEntity>().HasQueryFilter(x => x.TenantId == tenantContext.TenantId);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var entries = ChangeTracker.Entries<BaseEntity>();
+        foreach (var entry in entries)
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAtUtc = DateTime.UtcNow;
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
     }
 }

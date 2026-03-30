@@ -23,7 +23,9 @@ public static class ServiceCollectionExtensions
                     ValidateLifetime = true,
                     ValidIssuer = options.Issuer,
                     ValidAudience = options.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key)),
+                    ClockSkew = TimeSpan.FromSeconds(15),
+                    RequireExpirationTime = true
                 };
             });
 

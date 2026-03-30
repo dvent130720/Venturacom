@@ -1,11 +1,21 @@
-using FluentValidation;
-using MediatR;
+using System.Threading.RateLimiting;
+using Serilog;
+using Serilog.Sinks.Grafana.Loki;
 using Venturacom.API.Extensions;
 using Venturacom.API.Middleware;
 using Venturacom.Application;
 using Venturacom.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.GrafanaLoki(builder.Configuration["Loki:Url"] ?? "http://loki:3100")
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -15,6 +25,20 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddExceptionHandler(_ => { });
 builder.Services.AddProblemDetails();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 500,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }));
+});
 
 var app = builder.Build();
 
@@ -26,6 +50,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseSecurityHeaders();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseTenantMiddleware();
 app.UseAuthorization();

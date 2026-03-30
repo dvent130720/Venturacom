@@ -7,6 +7,12 @@ public sealed class TenantMiddleware(RequestDelegate next)
 {
     public async Task Invoke(HttpContext context, ITenantContext tenantContext)
     {
+        if (context.Request.Path.StartsWithSegments("/api/auth", StringComparison.OrdinalIgnoreCase))
+        {
+            await next(context);
+            return;
+        }
+
         var tenantClaim = context.User.FindFirstValue("tenant_id")
             ?? context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
 
