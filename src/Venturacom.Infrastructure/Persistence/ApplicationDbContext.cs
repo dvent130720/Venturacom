@@ -3,6 +3,7 @@ using Venturacom.Application.Abstractions.Persistence;
 using Venturacom.Application.Common;
 using Venturacom.Domain.Common;
 using Venturacom.Domain.Entities;
+using Venturacom.Domain.Entities.Security;
 
 namespace Venturacom.Infrastructure.Persistence;
 
@@ -17,6 +18,10 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<InvoiceJob> InvoiceJobs => Set<InvoiceJob>();
     public DbSet<SriLog> SriLogs => Set<SriLog>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Venturacom.Domain.Entities;
+using Venturacom.Domain.Entities.Security;
 
 namespace Venturacom.Application.Abstractions.Persistence;
 
@@ -14,5 +15,9 @@ public interface IApplicationDbContext
     DbSet<InvoiceItem> InvoiceItems { get; }
     DbSet<InvoiceJob> InvoiceJobs { get; }
     DbSet<SriLog> SriLogs { get; }
+    DbSet<Role> Roles { get; }
+    DbSet<Permission> Permissions { get; }
+    DbSet<UserRole> UserRoles { get; }
+    DbSet<RolePermission> RolePermissions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

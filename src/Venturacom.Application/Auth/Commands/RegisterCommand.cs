@@ -5,6 +5,7 @@ using Venturacom.Application.Abstractions.Persistence;
 using Venturacom.Application.Auth.DTOs;
 using Venturacom.Application.Auth.Security;
 using Venturacom.Domain.Entities;
+using Venturacom.Domain.Entities.Security;
 
 namespace Venturacom.Application.Auth.Commands;
 
@@ -35,9 +36,16 @@ public sealed class RegisterCommandHandler(
             IsActive = true
         };
 
-        var refreshTokenRaw = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        var ownerRole = await EnsureOwnerRoleAsync(request.TenantId, cancellationToken);
 
+        var refreshTokenRaw = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         await dbContext.Users.AddAsync(user, cancellationToken);
+        await dbContext.UserRoles.AddAsync(new UserRole
+        {
+            TenantId = request.TenantId,
+            User = user,
+            RoleId = ownerRole.Id
+        }, cancellationToken);
         await dbContext.RefreshTokens.AddAsync(new RefreshToken
         {
             TenantId = request.TenantId,
@@ -47,6 +55,19 @@ public sealed class RegisterCommandHandler(
         }, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return new AuthTokensDto(tokenGenerator.Generate(user), refreshTokenRaw, DateTime.UtcNow.AddDays(15));
+        return new AuthTokensDto(tokenGenerator.Generate(user, [ownerRole.Name]), refreshTokenRaw, DateTime.UtcNow.AddDays(15));
+    }
+
+    private async Task<Role> EnsureOwnerRoleAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        var role = await dbContext.Roles.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Name == "Owner", cancellationToken);
+        if (role is not null)
+        {
+            return role;
+        }
+
+        role = new Role { TenantId = tenantId, Name = "Owner" };
+        await dbContext.Roles.AddAsync(role, cancellationToken);
+        return role;
     }
 }

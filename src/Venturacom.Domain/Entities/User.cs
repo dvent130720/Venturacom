@@ -1,4 +1,5 @@
 using Venturacom.Domain.Common;
+using Venturacom.Domain.Entities.Security;
 
 namespace Venturacom.Domain.Entities;
 
@@ -12,4 +13,5 @@ public sealed class User : BaseEntity
     public DateTime LastLoginAtUtc { get; set; }
     public Tenant Tenant { get; set; } = default!;
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }

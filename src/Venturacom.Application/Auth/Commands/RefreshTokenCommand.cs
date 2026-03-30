@@ -39,8 +39,12 @@ public sealed class RefreshTokenCommandHandler(
         };
 
         await dbContext.RefreshTokens.AddAsync(replacement, cancellationToken);
+        var roles = await dbContext.UserRoles.AsNoTracking()
+            .Where(x => x.UserId == storedToken.UserId)
+            .Join(dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (_, r) => r.Name)
+            .ToListAsync(cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new AuthTokensDto(tokenGenerator.Generate(storedToken.User), replacementRaw, replacement.ExpiresAtUtc);
+        return new AuthTokensDto(tokenGenerator.Generate(storedToken.User, roles), replacementRaw, replacement.ExpiresAtUtc);
     }
 }

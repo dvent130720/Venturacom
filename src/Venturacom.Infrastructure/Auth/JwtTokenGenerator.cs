@@ -10,7 +10,7 @@ namespace Venturacom.Infrastructure.Auth;
 
 public sealed class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenGenerator
 {
-    public string Generate(User user)
+    public string Generate(User user, IReadOnlyCollection<string> roles)
     {
         var settings = options.Value;
         var credentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Key)), SecurityAlgorithms.HmacSha256);
@@ -21,6 +21,8 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenG
             new("tenant_id", user.TenantId.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email)
         };
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var token = new JwtSecurityToken(settings.Issuer, settings.Audience, claims, expires: DateTime.UtcNow.AddMinutes(settings.AccessTokenMinutes), signingCredentials: credentials);
         return new JwtSecurityTokenHandler().WriteToken(token);

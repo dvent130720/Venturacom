@@ -37,6 +37,12 @@ Estructura por capas:
   - `POST /api/auth/google`
   - `POST /api/auth/refresh`
 - Refresh tokens se guardan **hasheados** (SHA-256) en base de datos.
+- JWT incluye claims de roles por tenant.
+
+### Roles y permisos
+- Modelo de seguridad: `Role`, `Permission`, `UserRole`, `RolePermission`.
+- Módulos soportados: `Facturacion`, `Inventario`, `Reportes`, `ModuloIA`.
+- `Permission` es catálogo general; `Role`, `UserRole` y `RolePermission` son multi-tenant.
 
 ### Worker y cola
 - `InvoiceWorker` procesa jobs asíncronos de `invoice_jobs`.
@@ -47,10 +53,14 @@ Estructura por capas:
 - Trazabilidad SRI en tabla `sri_logs`.
 
 ## Configuración mínima
-Configurar en `src/Venturacom.API/appsettings.json`:
+Configurar en `src/Venturacom.API/appsettings.json` y `src/Venturacom.API/config.json` para Redis:
 
 - `ConnectionStrings:DefaultConnection`
-- `ConnectionStrings:Redis`
+- `Redis:Server`
+- `Redis:Port`
+- `Redis:Password`
+- `Redis:Database`
+- `Redis:Ssl`
 - `Jwt:Issuer`
 - `Jwt:Audience`
 - `Jwt:Key`

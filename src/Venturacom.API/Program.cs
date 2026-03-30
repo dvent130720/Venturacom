@@ -5,8 +5,10 @@ using Venturacom.API.Extensions;
 using Venturacom.API.Middleware;
 using Venturacom.Application;
 using Venturacom.Infrastructure;
+using Venturacom.Infrastructure.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("config.json", optional: true, reloadOnChange: true);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -25,7 +27,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddExceptionHandler(_ => { });
 builder.Services.AddProblemDetails();
-builder.Services.AddHealthChecks().AddRedis(builder.Configuration.GetConnectionString("Redis") ?? "redis:6379", name: "redis");
+
+var redisOptions = builder.Configuration.GetSection(RedisOptions.SectionName).Get<RedisOptions>() ?? new RedisOptions();
+builder.Services.AddHealthChecks().AddRedis(redisOptions.ToConnectionString(), name: "redis");
 
 builder.Services.AddRateLimiter(options =>
 {

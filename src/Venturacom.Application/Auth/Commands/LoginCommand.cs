@@ -4,7 +4,6 @@ using Venturacom.Application.Abstractions.Auth;
 using Venturacom.Application.Abstractions.Persistence;
 using Venturacom.Application.Auth.DTOs;
 using Venturacom.Application.Auth.Security;
-using Venturacom.Domain.Entities;
 
 namespace Venturacom.Application.Auth.Commands;
 
@@ -28,19 +27,21 @@ public sealed class LoginCommandHandler(
         }
 
         user.LastLoginAtUtc = DateTime.UtcNow;
+        var roles = await dbContext.UserRoles.AsNoTracking()
+            .Where(x => x.UserId == user.Id)
+            .Join(dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (_, r) => r.Name)
+            .ToListAsync(cancellationToken);
 
         var refreshTokenRaw = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        var refreshToken = new RefreshToken
+        await dbContext.RefreshTokens.AddAsync(new()
         {
             TenantId = user.TenantId,
             UserId = user.Id,
             Token = RefreshTokenHasher.Hash(refreshTokenRaw),
             ExpiresAtUtc = DateTime.UtcNow.AddDays(15)
-        };
+        }, cancellationToken);
 
-        await dbContext.RefreshTokens.AddAsync(refreshToken, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new AuthTokensDto(tokenGenerator.Generate(user), refreshTokenRaw, refreshToken.ExpiresAtUtc);
+        return new AuthTokensDto(tokenGenerator.Generate(user, roles), refreshTokenRaw, DateTime.UtcNow.AddDays(15));
     }
 }
