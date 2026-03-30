@@ -25,6 +25,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddExceptionHandler(_ => { });
 builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks().AddRedis(builder.Configuration.GetConnectionString("Redis") ?? "redis:6379", name: "redis");
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -56,4 +58,5 @@ app.UseAuthentication();
 app.UseTenantMiddleware();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.Run();

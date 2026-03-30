@@ -20,7 +20,7 @@ Estructura por capas:
 - `src/Venturacom.Application`
   - Casos de uso (MediatR), DTOs, validaciones (FluentValidation), abstracciones.
 - `src/Venturacom.Infrastructure`
-  - EF Core, auth providers, cola SQL, worker, integración Google/Loki.
+  - EF Core, auth providers, Redis cache distribuido, cola SQL, worker, integración Google/Loki.
 - `src/Venturacom.API`
   - Controllers, middlewares, bootstrapping, seguridad HTTP, rate limiting.
 
@@ -50,6 +50,7 @@ Estructura por capas:
 Configurar en `src/Venturacom.API/appsettings.json`:
 
 - `ConnectionStrings:DefaultConnection`
+- `ConnectionStrings:Redis`
 - `Jwt:Issuer`
 - `Jwt:Audience`
 - `Jwt:Key`

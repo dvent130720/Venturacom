@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 using Venturacom.Application.Abstractions.Auth;
+using Venturacom.Application.Abstractions.Caching;
 using Venturacom.Application.Abstractions.Persistence;
 using Venturacom.Application.Abstractions.Queue;
 using Venturacom.Application.Common;
 using Venturacom.Infrastructure.Auth;
+using Venturacom.Infrastructure.Caching;
 using Venturacom.Infrastructure.Persistence;
 using Venturacom.Infrastructure.Queue;
 using Venturacom.Infrastructure.Services;
@@ -24,6 +27,16 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), sql => sql.EnableRetryOnFailure(5)));
 
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+            options.InstanceName = "venturacom:";
+        });
+
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? "redis:6379"));
+
+        services.AddScoped<ICacheService, RedisCacheService>();
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
