@@ -1,9 +1,0 @@
-{
-  "Redis": {
-    "Server": "redis",
-    "Port": 6379,
-    "Password": "",
-    "Database": 0,
-    "Ssl": false
-  }
-}

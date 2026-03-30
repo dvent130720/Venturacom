@@ -53,7 +53,7 @@ Estructura por capas:
 - Trazabilidad SRI en tabla `sri_logs`.
 
 ## Configuración mínima
-Configurar en `src/Venturacom.API/appsettings.json` y `src/Venturacom.API/config.json` para Redis:
+Configurar en `src/Venturacom.API/appsettings.json`:
 
 - `ConnectionStrings:DefaultConnection`
 - `Redis:Server`

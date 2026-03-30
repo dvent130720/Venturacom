@@ -8,8 +8,6 @@ using Venturacom.Infrastructure;
 using Venturacom.Infrastructure.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddJsonFile("config.json", optional: true, reloadOnChange: true);
-
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
