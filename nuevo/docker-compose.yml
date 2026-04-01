@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  api:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=sri;Username=sri;Password=sri
+      - Encryption__Key=ChangeMe
+    depends_on: [postgres]
+  worker:
+    build: .
+    command: ["dotnet","SRI.Facturacion.Worker.dll"]
+    environment:
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=sri;Username=sri;Password=sri
+      - Encryption__Key=ChangeMe
+    depends_on: [postgres]
+  postgres:
+    image: postgres:16
+    environment: { POSTGRES_DB: sri, POSTGRES_USER: sri, POSTGRES_PASSWORD: sri }
+    ports: ["5432:5432"]
