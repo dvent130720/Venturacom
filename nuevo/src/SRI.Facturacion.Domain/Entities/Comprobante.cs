@@ -1,0 +1,4 @@
+using SRI.Facturacion.Domain.Common;
+using SRI.Facturacion.Domain.Enums;
+namespace SRI.Facturacion.Domain.Entities;
+public sealed class Comprobante : EntityBase { public Guid TenantId { get; set; } public TipoComprobante Tipo { get; set; } public EstadoComprobanteEnum Estado { get; set; } = EstadoComprobanteEnum.Generado; public string ClaveAcceso { get; set; } = string.Empty; public string Serie { get; set; } = string.Empty; public string Secuencial { get; set; } = string.Empty; public string? XmlGenerado { get; set; } public string? XmlFirmado { get; set; } public string? SriTrackId { get; set; } public string? ErrorCode { get; set; } public string? ErrorMessage { get; set; } public int Intentos { get; set; } public DateTime? NextAttemptAtUtc { get; set; } public ICollection<DetalleComprobante> Detalles { get; set; } = new List<DetalleComprobante>(); public ICollection<Impuesto> Impuestos { get; set; } = new List<Impuesto>(); }
