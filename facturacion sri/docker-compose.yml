@@ -1,0 +1,55 @@
+version: '3.9'
+services:
+  certificate-service:
+    build: .
+    container_name: certificate-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      CERT_ENCRYPTION_KEY: ${CERT_ENCRYPTION_KEY}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=certificates_db;Username=postgres;Password=postgres
+      ConnectionStrings__Redis: redis:6379
+      Loki__Url: http://loki:3100
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+      - loki
+
+  postgres:
+    image: postgres:16
+    container_name: certificates-postgres
+    environment:
+      POSTGRES_DB: certificates_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./deploy/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    container_name: certificates-redis
+    ports:
+      - "6379:6379"
+
+  loki:
+    image: grafana/loki:3.0.0
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+
+volumes:
+  pg_data:
