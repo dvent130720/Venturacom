@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityService.Api", "src/IdentityService.Api/IdentityService.Api.csproj", "{71EA9768-D074-4FA4-B500-B5600B424A13}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BillingService.Api", "src/BillingService.Api/BillingService.Api.csproj", "{96AAE2FA-6B7D-4A7D-9675-2A7A4E5D4CB1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertificateService.Api", "src/CertificateService.Api/CertificateService.Api.csproj", "{E55286B8-B6CB-4BB0-A462-7C017E76926B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SriService.Worker", "src/SriService.Worker/SriService.Worker.csproj", "{A50D4A24-3AE5-4881-BBE9-6B89BC7A6688}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Contracts", "src/Shared.Contracts/Shared.Contracts.csproj", "{BDA72B2E-EA50-41E0-B5A3-98CD8E9A587A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+EndGlobal

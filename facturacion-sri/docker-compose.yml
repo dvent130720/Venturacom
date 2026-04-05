@@ -1,0 +1,56 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: src/IdentityService.Api/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    ports: ["8081:8080"]
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: src/BillingService.Api/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=billing;Username=postgres;Password=postgres
+    depends_on: [postgres, rabbitmq]
+    ports: ["8082:8080"]
+
+  certificate-service:
+    build:
+      context: .
+      dockerfile: src/CertificateService.Api/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=certificates;Username=postgres;Password=postgres
+      InternalAuth__ApiKey: ${INTERNAL_API_KEY}
+      Encryption__MasterKey: ${CERT_MASTER_KEY_BASE64}
+      Auth__Authority: http://identity-service:8080
+    depends_on: [postgres, identity-service]
+    ports: ["8083:8080"]
+
+  sri-worker:
+    build:
+      context: .
+      dockerfile: src/SriService.Worker/Dockerfile
+    environment:
+      CertificateService__BaseUrl: http://certificate-service:8080/
+      CertificateService__InternalApiKey: ${INTERNAL_API_KEY}
+    depends_on: [rabbitmq, certificate-service]
+
+volumes:
+  postgres-data:
