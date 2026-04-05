@@ -8,6 +8,7 @@ public class CertificadoDigital
     public byte[] P12Encriptado { get; set; } = Array.Empty<byte>();
     public byte[] PasswordEncriptado { get; set; } = Array.Empty<byte>();
     public string? Thumbprint { get; set; }
+    public string? ThumbprintHash { get; set; }
     public DateTimeOffset FechaExpiracion { get; set; }
     public bool EstaActivo { get; set; }
     public DateTimeOffset CreadoEn { get; set; } = DateTimeOffset.UtcNow;

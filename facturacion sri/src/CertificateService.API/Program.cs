@@ -1,5 +1,6 @@
 using CertificateService.API.Middleware;
 using CertificateService.Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
 using System.Threading.RateLimiting;
 
@@ -22,11 +23,23 @@ builder.Services.AddInfraestructura(builder.Configuration);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddFixedWindowLimiter("limite-certificados", cfg =>
+    options.OnRejected = static (context, token) =>
     {
-        cfg.PermitLimit = 30;
-        cfg.Window = TimeSpan.FromMinutes(1);
-        cfg.QueueLimit = 0;
+        context.HttpContext.Response.Headers.TryAdd("Retry-After", "60");
+        return ValueTask.CompletedTask;
+    };
+
+    options.AddPolicy("limite-certificados", httpContext =>
+    {
+        var tenantId = httpContext.Items.TryGetValue("TenantId", out var tenant) ? tenant?.ToString() : "anonimo";
+
+        return RateLimitPartition.GetFixedWindowLimiter(tenantId ?? "anonimo", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
     });
 });
 
@@ -35,6 +48,7 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<TenantMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())

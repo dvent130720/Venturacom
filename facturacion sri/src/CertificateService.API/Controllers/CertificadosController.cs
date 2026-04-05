@@ -1,4 +1,5 @@
 using CertificateService.API.Extensions;
+using CertificateService.API.Models;
 using CertificateService.Application.DTOs;
 using CertificateService.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +19,16 @@ public class CertificadosController(ICertificadosUseCases useCases, IFirmaXmlSer
         if (file.Length == 0)
             return BadRequest("Archivo vacío.");
 
+        if (!Path.GetExtension(file.FileName).Equals(".p12", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Solo se permiten archivos con extensión .p12");
+
         await using var ms = new MemoryStream();
         await file.CopyToAsync(ms, cancellationToken);
 
         var request = new SubirCertificadoRequest
         {
             TenantId = tenantId,
-            Nombre = name,
+            Nombre = string.IsNullOrWhiteSpace(name) ? file.FileName : name,
             Password = password,
             ArchivoP12 = ms.ToArray()
         };
@@ -36,10 +40,13 @@ public class CertificadosController(ICertificadosUseCases useCases, IFirmaXmlSer
     }
 
     [HttpGet]
-    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
+    public async Task<IActionResult> Listar([FromQuery(Name = "tenant_id")] Guid? tenantIdQuery, CancellationToken cancellationToken)
     {
-        var tenantId = HttpContext.ObtenerTenantId();
-        return Ok(await useCases.ListarAsync(tenantId, cancellationToken));
+        var tenantIdHeader = HttpContext.ObtenerTenantId();
+        if (tenantIdQuery.HasValue && tenantIdQuery.Value != tenantIdHeader)
+            throw new UnauthorizedAccessException("El tenant_id consultado no coincide con el contexto autenticado.");
+
+        return Ok(await useCases.ListarAsync(tenantIdHeader, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
@@ -66,10 +73,13 @@ public class CertificadosController(ICertificadosUseCases useCases, IFirmaXmlSer
     }
 
     [HttpPost("sign-xml")]
-    public async Task<IActionResult> FirmarXml([FromBody] string xml, CancellationToken cancellationToken)
+    public async Task<IActionResult> FirmarXml([FromBody] FirmarXmlRequest request, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Xml))
+            return BadRequest("El XML es obligatorio.");
+
         var tenantId = HttpContext.ObtenerTenantId();
-        var firmado = await firmaXmlService.FirmarXmlAsync(xml, tenantId, cancellationToken);
+        var firmado = await firmaXmlService.FirmarXmlAsync(request.Xml, tenantId, cancellationToken);
         return Ok(new { xmlFirmado = firmado });
     }
 }

@@ -4,7 +4,9 @@ using CertificateService.Domain.Entities;
 using CertificateService.Domain.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
 
 namespace CertificateService.Application.UseCases;
@@ -33,6 +35,12 @@ public class CertificadosUseCases : ICertificadosUseCases, ICertificateSigningSe
 
     public async Task<CertificadoDto> SubirCertificadoAsync(SubirCertificadoRequest request, CancellationToken cancellationToken)
     {
+        if (request.TenantId == Guid.Empty)
+            throw new InvalidOperationException("tenant_id es obligatorio.");
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+            throw new InvalidOperationException("La contraseña del certificado es obligatoria.");
+
         if (!request.Nombre.EndsWith(".p12", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("El archivo debe ser .p12");
 
@@ -42,8 +50,9 @@ public class CertificadosUseCases : ICertificadosUseCases, ICertificateSigningSe
             TenantId = request.TenantId,
             Nombre = request.Nombre,
             P12Encriptado = _encriptacion.Encriptar(request.ArchivoP12),
-            PasswordEncriptado = _encriptacion.Encriptar(System.Text.Encoding.UTF8.GetBytes(request.Password)),
+            PasswordEncriptado = _encriptacion.Encriptar(Encoding.UTF8.GetBytes(request.Password)),
             Thumbprint = certificado.Thumbprint,
+            ThumbprintHash = CalcularSha256Hex(certificado.Thumbprint),
             FechaExpiracion = certificado.NotAfter,
             EstaActivo = false
         };
@@ -79,7 +88,7 @@ public class CertificadosUseCases : ICertificadosUseCases, ICertificateSigningSe
         await _repositorio.GuardarCambiosAsync(cancellationToken);
 
         var cacheKey = $"cert-activo-meta:{tenantId}";
-        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(new { certificado.Id, certificado.Thumbprint, certificado.FechaExpiracion }),
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(new { certificado.Id, certificado.ThumbprintHash, certificado.FechaExpiracion }),
             new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12) }, cancellationToken);
 
         _logger.LogInformation("Certificado activado tenant={TenantId} certificado={CertificadoId}", tenantId, id);
@@ -100,7 +109,7 @@ public class CertificadosUseCases : ICertificadosUseCases, ICertificateSigningSe
             ?? throw new InvalidOperationException("No existe certificado activo para el tenant.");
 
         var p12 = _encriptacion.Desencriptar(activo.P12Encriptado);
-        var password = System.Text.Encoding.UTF8.GetString(_encriptacion.Desencriptar(activo.PasswordEncriptado));
+        var password = Encoding.UTF8.GetString(_encriptacion.Desencriptar(activo.PasswordEncriptado));
         var cert = _certificadoCripto.CargarYValidar(p12, password);
 
         return (cert, password);
@@ -108,4 +117,13 @@ public class CertificadosUseCases : ICertificadosUseCases, ICertificateSigningSe
 
     private static CertificadoDto Mapear(CertificadoDigital entity)
         => new(entity.Id, entity.TenantId, entity.Nombre, entity.Thumbprint, entity.FechaExpiracion, entity.EstaActivo, entity.CreadoEn);
+
+    private static string CalcularSha256Hex(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(hash);
+    }
 }
